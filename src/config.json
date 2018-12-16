@@ -1,0 +1,21 @@
+{
+    "app": {
+        "host": {
+            "port": 3000
+        },
+        "accept": {
+            "json": null,
+            "text": null,
+            "urlencoded": {
+                "extended": false
+            }
+        }
+    },
+    "infrastructure": {
+        "nodes": -1,
+        "autoRespawn": true,
+        "ignoreRespawnOnErrorCode": 0,
+        "modulesDir": "modules",
+        "pluginsDir": "plugins"
+    }
+}

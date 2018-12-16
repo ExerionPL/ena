@@ -1,0 +1,22 @@
+{
+  "name": "nodejs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ExerionPL/ena.git"
+  },
+  "keywords": [],
+  "author": "Adam Wojciechowski <adam.grzegorz.wojciechowski@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "chokidar": "^2.0.4",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.4"
+  }
+}
