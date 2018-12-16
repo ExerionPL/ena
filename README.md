@@ -1,4 +1,4 @@
-![alt text](/img/logo-128.png)
+![alt text](/img/logo-wide-128.png)
 
 # ENA
 Extensible Node Application is simple node app, that serve as a backend app. You can easily add endpoints to this app by adding module.js files to `module` folder.
