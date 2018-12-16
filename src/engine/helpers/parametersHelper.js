@@ -3,6 +3,6 @@ module.exports = (func) => {
     const ARGUMENT_NAMES = /([^\s,]+)/g;
     
     const fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     return result === null ? [] : result;
 }
