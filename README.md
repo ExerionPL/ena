@@ -4,7 +4,9 @@
 Extensible Node Application is simple node app, that serve as a rest-style backend. You can easily add endpoints to this app by adding `module.js` files to `module` folder. For more information see `/modules/Test/module.js` file.
 
 General guidelines for creating endpoint:
-- folder structure inside `modules` folder will be used as an endpoint route, e.g. `modules/User/module.js` will be routed to `http://example.com/user`, while `modules/article/details/module.js` will be routed to `http://example.com/article/details` url.
+- folder structure inside `modules` folder will be used as an endpoint route, e.g.:
+  - `modules/User/module.js` -> `http://example.com/user`
+  - `modules/article/details/module.js` -> `http://example.com/article/details`
 - use 4 rest methods: GET, POST, PUT and DELETE
 - each method should define it's parameters as follows:
   - parameters starting with underscore (`_`) will be retrieved from path
