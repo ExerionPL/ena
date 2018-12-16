@@ -27,15 +27,14 @@ module.exports = (router, type, moduleObject) => {
     // path params starts with '_', body params starts with $, rest of them are from query string
     const fn = moduleObject[type];
     const args = parametersHelper(fn);
-    const pathArgs = args.filter(a => a.indexOf('_') === 0);
-    const path = pathArgs.reduce((p, c) => `${p}/:${c.substr(1)}`, '');
+    const path = args.filter(a => a.startsWith('_')).reduce((p, c) => `${p}/:${c.substr(1)}`, '');
 
     const mappers = [];
     args.forEach(a => {
-        if (a.indexOf('_') === 0) {
+        if (a.startsWith('_')) {
             const p = a.substr(1);
             mappers.push((req) => req.params[p]);
-        } else if (a.indexOf('$') !== -1) {
+        } else if (a.startsWith('$')) {
             const p = a.substr(1);
             mappers.push((req) => req.body[p]);
         } else {
