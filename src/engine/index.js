@@ -52,7 +52,7 @@ class AppEngine
         const infrastructureConfig = configHelper(config, 'infrastructure');
 
         // spawn nodes
-        let nodesToSpawn = infrastructureConfig.nodes === -1 ? numCPUs : (infrastructureConfig.nodes || 0);
+        let nodesToSpawn = infrastructureConfig.nodes < 0 ? numCPUs : (infrastructureConfig.nodes || 0);
         if (nodesToSpawn && cluster.isMaster) 
         {
             // list of ignored exit codes which will cause the worker not to respawn
