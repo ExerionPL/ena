@@ -28,9 +28,7 @@ module.exports = (router, type, moduleObject) => {
     const fn = moduleObject[type];
     const args = parametersHelper(fn);
     const pathArgs = args.filter(a => a.indexOf('_') === 0);
-    const path = pathArgs.reduce((p, c) => {
-        return p + `/:${c.substr(1)}`;
-    }, '');
+    const path = pathArgs.reduce((p, c) => `${p}/:${c.substr(1)}`, '');
 
     const mappers = [];
     args.forEach(a => {
