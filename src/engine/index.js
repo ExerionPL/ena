@@ -34,14 +34,14 @@ class AppEngine
         chokidar.watch(dir).on('add', filePath => {
             if (filePath.endsWith('module.js')) {
                 const route = this._extractRoute(dir, filePath);
-                require(filePath)((cls) => this._moduleLoader(`/${route}`, cls));
+                require(filePath)(module => this._moduleLoader(`/${route}`, module));
             }
         }); 
     }
 
     _loadPlugins(dir) {
         chokidar.watch(dir).on('add', p => {
-            if (p.indexOf('plugin.js') !== -1)
+            if (p.endsWith('plugin.js'))
                 require(p)(this._app);
         }); 
     }
