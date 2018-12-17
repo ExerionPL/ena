@@ -19,7 +19,7 @@ module.exports = (router, type, moduleObject, handler) => {
     // before handler
     const beforeFn = moduleObject[`before${FnName}`];
     if (beforeFn) handlers.push((req, res, next) => {
-        beforeFn(req);
+        beforeFn(req, res);
         next();
     });
 
