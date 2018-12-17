@@ -46,7 +46,7 @@ const sendMessage = require('./../common/sendMessage');
 module.exports = router => {
     router({
         canAccessPut: req => req.cookie.userId != null,
-        beforePut: req => req.body.user = getUser(req.cookie.userId),
+        beforePut: (req, res) => req.body.user = getUser(req.cookie.userId),
         put: (_id, $description, $user) => {
             const s = new taskService();
             return s.updateTask({
