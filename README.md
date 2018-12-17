@@ -4,6 +4,7 @@
 Extensible Node Application is simple node app, that serve as a rest-style backend. It's purpose is to speed up app generation by focusing on adding business functionality rather than fighting with setup process. You can extend it with modules (endpoints) and plugins to add functionality. Treat it as a boilerplate, and feel free to modify it as you see fit.
 
 Application uses:
+- [expressjs](https://www.npmjs.com/package/express)
 - [body-parser](https://www.npmjs.com/package/body-parser)
 - [cookie-parser](https://www.npmjs.com/package/cookie-parser)
 - [Chokidar](https://www.npmjs.com/package/chokidar)
