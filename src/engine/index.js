@@ -79,7 +79,7 @@ class AppEngine
         } else {
             // create app
             this._app = express();
-            
+
             // read config
             const appConfig  = configHelper(config, 'app.host');
             const appAccept  = configHelper(config, 'app.accept');

@@ -36,6 +36,36 @@ General guidelines for creating endpoint:
   - \[method\] - main handler of the method, will receive declared paramters autowired from request accordingly to the names, you can provide an array of handlers with different path parameters, and they will be autowired to respective paths (build from path parameters). It is important to follow proper order of handlers, as it may lead to unwanted errors when resolving route handler. Also, remember, that it's the number of path parameters that distincts the path, not the names and order.
   - after\[method\] - runs after handler, receives expressjs request and response objects
 
+(not the best) Example:
+```javascript
+const getUser = require('./../common/getUser');
+const taskService = require('./../common/taskService');
+const sendMessage = require('./../common/sendMessage');
+
+module.exports = router => {
+    router({
+        canAccessPut: req => req.cookie.userId != null,
+        beforePut: req => req.body.user = userService(req.cookie.userId),
+        put: (_id, $description, $user) => {
+            const s = new taskService();
+            return s.updateTask({
+                id: _id,
+                description: $description,
+                userId: $user.id
+            });
+        },
+        afterPut: (req, res) => {
+            if (res.statusCode == 200) {
+                const s = new taskService();
+                const task = s.getTask(req.params.id); // note, that id parameter from path does not use '_' character in it's name
+                const user = req.body.user; // body parameters in request object does also does not use prefix
+                sendMessage(user.email, `Task ${task.name} has been successfully updated`);
+            }
+        }
+    });
+};
+```
+
 ## Plugins
 Application allows for defining own plugins, they are simple functions that accespt express app object. They are defined within `plugins` directory, as a `plugin.js` file within it's respective folder, e.g. `/plugins/ResponseAutoClose/plugin.js`
 
