@@ -1,7 +1,7 @@
 const parametersHelper = require('./parametersHelper');
 const responseHelper = require('./responseHelper');
 
-module.exports = (router, type, moduleObject) => {
+module.exports = (router, type, moduleObject, handler) => {
     const FnName = type[0].toUpperCase() + type.substr(1);
     const handlers = [];
 
@@ -25,7 +25,7 @@ module.exports = (router, type, moduleObject) => {
 
     // action handler
     // path params starts with '_', body params starts with $, rest of them are from query string
-    const fn = moduleObject[type];
+    const fn = handler || moduleObject[type];
     const args = parametersHelper(fn);
     const path = args.filter(a => a.startsWith('_')).reduce((p, c) => `${p}/:${c.substr(1)}`, '');
 

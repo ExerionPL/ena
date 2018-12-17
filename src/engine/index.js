@@ -18,7 +18,13 @@ class AppEngine
     _moduleLoader(route, module) {
         const router = express.Router();
         ['get', 'post', 'put', 'delete'].forEach(k => {
-            if (module[k]) routerHelper(router, k, module);
+            const handler = module[k];
+            if (handler) {
+                if (typeof(handler) === 'object') // an array of handlers each for different route because of path parameters
+                    handler.forEach(h => routerHelper(router, k, module, h));
+                else
+                    routerHelper(router, k, module);
+            }
         });
         this._app.use(route, router);
     }
@@ -88,11 +94,15 @@ class AppEngine
             this._app.use(cookieParser(appCookies.secret, appCookies.options));
 
             // load modules
-            const modulesPath = path.join(__dirname, '..', (infrastructureConfig.modulesDir || 'modules'));
+            let modulesPath = infrastructureConfig.modulesDir || 'modules';
+            if (!path.isAbsolute(modulesPath))
+                modulesPath = path.join(__dirname, '..', modulesPath);
             this._loadModules(modulesPath);
 
             // load plugins
-            const pluginsPath = path.join(__dirname, '..', (infrastructureConfig.pluginsDir || 'plugins'));
+            let pluginsPath = infrastructureConfig.pluginsDir || 'plugins';
+            if (!path.isAbsolute(pluginsPath))
+                pluginsPath = path.join(__dirname, '..', pluginsPath);
             this._loadPlugins(pluginsPath);
 
             this._app.listen(appConfig.port || 80, appConfig.host, (err) => {

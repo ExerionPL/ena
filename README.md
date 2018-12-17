@@ -1,11 +1,23 @@
 ![alt text](/img/logo-wide-128.png)
 
 # ENA
-Extensible Node Application is simple node app, that serve as a rest-style backend. You can easily add endpoints to this app by adding `module.js` files to `module` folder. For more information see `/modules/Test/module.js` file.
+Extensible Node Application is simple node app, that serve as a rest-style backend. It's purpose is to speed up app generation by focusing on adding business functionality rather than fighting with setup process. You can extend it with modules (endpoints) and plugins to add functionality. Treat it as a boilerplate, and feel free to modify it as you see fit.
+
+Application uses:
+- [body-parser](https://www.npmjs.com/package/body-parser)
+- [cookie-parser](https://www.npmjs.com/package/cookie-parser)
+- [Chokidar](https://www.npmjs.com/package/chokidar)
+
+All copyrights for the above packages belong to their respective owners.
+
+> Application is still under development, so more features will be added in future.
+
+## Modules
+You can easily add endpoints to this app by adding `module.js` files to `module` folder. For more information see `/modules/Test/module.js` file.
 
 General guidelines for creating endpoint:
 - folder structure inside `modules` folder will be used as an endpoint route, e.g.:
-  - `modules/User/module.js` -> `http://example.com/user`
+  - `modules/user/module.js` -> `http://example.com/user`
   - `modules/article/details/module.js` -> `http://example.com/article/details`
 - use 4 rest methods: GET, POST, PUT and DELETE
 - each method should define it's parameters as follows:
@@ -20,9 +32,49 @@ General guidelines for creating endpoint:
 - each method has it's lifecycle:
   - canAccess\[method\] - returns boolean value indicating whether user have access to specific endpoint or not, receives expressjs request object 
   - before\[method\] - runs before handler, can modify request specificaly for this handler, receives expressjs request object
-  - \[method\] - main handler of the method, will receive declared paramters autowired from request accordingly to the names
+  - \[method\] - main handler of the method, will receive declared paramters autowired from request accordingly to the names, you can provide an array of handlers with different path parameters, and they will be autowired to respective paths (build from path parameters). It is important to follow proper order of handlers, as it may lead to unwanted errors when resolving route handler. Also, remember, that it's the number of path parameters that distincts the path, not the names and order.
   - after\[method\] - runs after handler, receives expressjs request and response objects
 
+## Plugins
+Application allows for defining own plugins, they are simple functions that accespt express app object. They are defined within `plugins` directory, as a `plugin.js` file within it's respective folder, e.g. `/plugins/ResponseAutoClose/plugin.js`
+
+## Automatic modules and plugins detection
+Both `modules` and `plugins` folders are being monitored by [Chokidar](https://www.npmjs.com/package/chokidar) so that any module/plugin added while application is running will be automatically included, however changes made to already loaded won't be reloaded.
+
+## Configuration
+Defined in `config.json` file allows to define following options:
+```javascript
+{
+    "app": {
+        "host": {
+            "port": Number?, default = 80,
+            "host": String?, default = "localhost"
+        },
+        "accept": {
+            "json": bodyParser.OptionsJson?,
+            "text": bodyParser.OptionsText?,
+            "urlencoded": bodyParser.OptionsUrlencoded?,
+            "raw": bodyParser.Options?
+        }
+    },
+    "infrastructure": {
+        "nodes": Number?, default = 0,
+        "autoRespawn": Boolean,
+        "ignoreRespawnOnErrorCode": Number|Number[],
+        "modulesDir": String?, default = "modules",
+        "pluginsDir": String?, default = "plugins"
+    }
+}
+```
+
+`nodes` setting indicates how much worker nodes will be spawned, negative value will spawn maximum efficient number of workers (1 per CPU core),
+0 will not spawn any worker, instead application will work as a single thread app, positive value will spawn exact number of workers.
+
+`autoRespawn` setting indicates whether workers should be respawned if they've been closed.
+
+`ignoreRespawnOnErrorCode` setting contains exit codes which will cause worker process not to respawn (necessary shutting down worker if needed).
+
+Both `modulesDir` and `pluginsDir` can be either absolute or relative. If relative, they will be rooted to main app directory.
 
 ## License
 
