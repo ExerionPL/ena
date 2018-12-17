@@ -32,7 +32,7 @@ General guidelines for creating endpoint:
   - object with render method that will be invoked the same way as above function
 - each method has it's lifecycle:
   - canAccess\[method\] - returns boolean value indicating whether user have access to specific endpoint or not, receives expressjs request object 
-  - before\[method\] - runs before handler, can modify request specificaly for this handler, receives expressjs request object
+  - before\[method\] - runs before handler, can modify request specificaly for this handler, receives expressjs request and response objects
   - \[method\] - main handler of the method, will receive declared paramters autowired from request accordingly to the names, you can provide an array of handlers with different path parameters, and they will be autowired to respective paths (build from path parameters). It is important to follow proper order of handlers, as it may lead to unwanted errors when resolving route handler. Also, remember, that it's the number of path parameters that distincts the path, not the names and order.
   - after\[method\] - runs after handler, receives expressjs request and response objects
 
@@ -45,7 +45,7 @@ const sendMessage = require('./../common/sendMessage');
 module.exports = router => {
     router({
         canAccessPut: req => req.cookie.userId != null,
-        beforePut: req => req.body.user = userService(req.cookie.userId),
+        beforePut: req => req.body.user = getUser(req.cookie.userId),
         put: (_id, $description, $user) => {
             const s = new taskService();
             return s.updateTask({
@@ -58,7 +58,7 @@ module.exports = router => {
             if (res.statusCode == 200) {
                 const s = new taskService();
                 const task = s.getTask(req.params.id); // note, that id parameter from path does not use '_' character in it's name
-                const user = req.body.user; // body parameters in request object does also does not use prefix
+                const user = req.body.user; // body parameters in request object also does not use prefix
                 sendMessage(user.email, `Task ${task.name} has been successfully updated`);
             }
         }

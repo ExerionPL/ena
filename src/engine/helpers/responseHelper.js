@@ -6,6 +6,6 @@ module.exports = (res, result) => {
                 return result.render(res);
             return res.json(result);
         default:
-            return res.write(result);
+            return res.send(result);
     }
 }

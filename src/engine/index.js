@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const chokidar = require('chokidar');
+const helmet = require('helmet');
 
 const configHelper = require('./helpers/configHelper');
 const routerHelper = require('./helpers/routerHelper');
@@ -79,6 +80,10 @@ class AppEngine
         } else {
             // create app
             this._app = express();
+            
+            // https://expressjs.com/en/advanced/best-practice-security.html
+            this._app.disable('x-powered-by');
+            this._app.use(helmet());
 
             // read config
             const appConfig  = configHelper(config, 'app.host');
