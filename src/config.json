@@ -12,10 +12,11 @@
         }
     },
     "infrastructure": {
-        "nodes": -1,
+        "nodes": 0,
         "autoRespawn": true,
         "ignoreRespawnOnErrorCode": 0,
         "modulesDir": "modules",
-        "pluginsDir": "plugins"
+        "pluginsDir": "plugins",
+        "logsDir": "logs"
     }
 }

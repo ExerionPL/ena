@@ -1,14 +1,22 @@
 const path = require('path');
+const fs = require('fs');
 const numCPUs = require('os').cpus().length;
 const cluster = require('cluster');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const chokidar = require('chokidar');
 const helmet = require('helmet');
+
+const errorHandling = require('./middlewares/errorHandling');
+const unresolvedHandler = require('./middlewares/unresolvedHandler');
 
 const configHelper = require('./helpers/configHelper');
 const routerHelper = require('./helpers/routerHelper');
+const fileListHelper = require('./helpers/fileListHelper');
+
+function resolvePath(value) {
+    return path.isAbsolute(value) ? value : path.join(__dirname, '..', value);
+}
 
 class AppEngine
 {
@@ -31,26 +39,22 @@ class AppEngine
     }
 
     _extractRoute(base, filePath) {
-        const parent = path.dirname(filePath);
-        const raw = parent.substr(base.length);
-        const replaced = raw.replace(path.sep, '/');
-        return replaced.replace(/^\/+|\/+$/g, '');
+        return path
+            .dirname(filePath)
+            .substr(base.length)
+            .replace(path.sep, '/')
+            .replace(/^\/+|\/+$/g, '');
     }
 
     _loadModules(dir) {
-        chokidar.watch(dir).on('add', filePath => {
-            if (filePath.endsWith('module.js')) {
-                const route = this._extractRoute(dir, filePath);
-                require(filePath)(module => this._moduleLoader(`/${route}`, module));
-            }
-        }); 
+        fileListHelper(dir, filePath => filePath.endsWith('module.js'), filePath => {
+            const route = this._extractRoute(dir, filePath);
+            require(filePath)(module => this._moduleLoader(`/${route}`, module));
+        });
     }
 
     _loadPlugins(dir) {
-        chokidar.watch(dir).on('add', p => {
-            if (p.endsWith('plugin.js'))
-                require(p)(this._app);
-        }); 
+        fileListHelper(dir, filePath => filePath.endsWith('plugin.js'), filePath => require(filePath)(this._app)); 
     }
 
     run(config) {
@@ -80,7 +84,7 @@ class AppEngine
         } else {
             // create app
             this._app = express();
-            
+
             // https://expressjs.com/en/advanced/best-practice-security.html
             this._app.disable('x-powered-by');
             this._app.use(helmet());
@@ -88,7 +92,7 @@ class AppEngine
             // read config
             const appConfig  = configHelper(config, 'app.host');
             const appAccept  = configHelper(config, 'app.accept');
-            const appCookies = configHelper(config, 'app.cookies')
+            const appCookies = configHelper(config, 'app.cookies');
             
             // configure middleware
             Object.keys(appAccept).forEach(a => {
@@ -99,17 +103,21 @@ class AppEngine
             this._app.use(cookieParser(appCookies.secret, appCookies.options));
 
             // load modules
-            let modulesPath = infrastructureConfig.modulesDir || 'modules';
-            if (!path.isAbsolute(modulesPath))
-                modulesPath = path.join(__dirname, '..', modulesPath);
+            const modulesPath = resolvePath(infrastructureConfig.modulesDir || 'modules');
             this._loadModules(modulesPath);
 
             // load plugins
-            let pluginsPath = infrastructureConfig.pluginsDir || 'plugins';
-            if (!path.isAbsolute(pluginsPath))
-                pluginsPath = path.join(__dirname, '..', pluginsPath);
+            const pluginsPath = resolvePath(infrastructureConfig.pluginsDir || 'plugins');
             this._loadPlugins(pluginsPath);
 
+            // error handling
+            const logsPath = resolvePath(infrastructureConfig.logsDir || 'logs');
+            this._app.use(errorHandling(logsPath));
+        
+            // when no handler has been executed, response will not be finished, so at this point, we can safely assume, that no route has been resolved
+            this._app.use(unresolvedHandler);
+
+            // launch the app
             this._app.listen(appConfig.port || 80, appConfig.host, (err) => {
                 if (err) throw err;
             });

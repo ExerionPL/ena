@@ -7,7 +7,8 @@ Application uses:
 - [expressjs](https://www.npmjs.com/package/express)
 - [body-parser](https://www.npmjs.com/package/body-parser)
 - [cookie-parser](https://www.npmjs.com/package/cookie-parser)
-- [Chokidar](https://www.npmjs.com/package/chokidar)
+- [helmet](https://www.npmjs.com/package/helmet)
+- [uuid](https://www.npmjs.com/package/uuid)
 
 All copyrights for the above packages belong to their respective owners.
 
@@ -70,7 +71,13 @@ module.exports = router => {
 Application allows for defining own plugins, they are simple functions that accespt express app object. They are defined within `plugins` directory, as a `plugin.js` file within it's respective folder, e.g. `/plugins/ResponseAutoClose/plugin.js`
 
 ## Automatic modules and plugins detection
-Both `modules` and `plugins` folders are being monitored by [Chokidar](https://www.npmjs.com/package/chokidar) so that any module/plugin added while application is running will be automatically included, however changes made to already loaded won't be reloaded.
+Both `modules` and `plugins` folders are scanned on application start, and required files are loaded in order to build middlewares for express app.
+you do not need to manualy load files from those folders.
+
+## Error handling
+By default, two additional middlewares are loaded:
+ - unresolvedHandler - handles sistuation when the requested route has not been resolved (no route handler has been launched) and returns 404 response
+ - errorHandling - handles errors returned by any previous middleware by returning 500 resposne and logging the error into file on hard drive in specified location [see Configuration section](#configuration)
 
 ## Configuration
 Defined in `config.json` file allows to define following options:
@@ -93,7 +100,8 @@ Defined in `config.json` file allows to define following options:
         "autoRespawn": Boolean,
         "ignoreRespawnOnErrorCode": Number|Number[],
         "modulesDir": String?, default = "modules",
-        "pluginsDir": String?, default = "plugins"
+        "pluginsDir": String?, default = "plugins",
+        "logsDir": String?, default = "logs"
     }
 }
 ```

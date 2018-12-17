@@ -8,25 +8,17 @@ module.exports = (router, type, moduleObject, handler) => {
     // access checker
     const accessFn = moduleObject[`canAccess${FnName}`];
     if (accessFn) handlers.push((req, res, next) => {
-        try {
-            if (accessFn(req))
-                next();
-            else
-                res.status(401).send('Unauthorized');
-        } catch (ex) {
-            next(ex);
-        }
+        if (accessFn(req))
+            next();
+        else
+            res.status(401).send('Unauthorized');
     });
 
     // before handler
     const beforeFn = moduleObject[`before${FnName}`];
     if (beforeFn) handlers.push((req, res, next) => {
-        try {
-            beforeFn(req, res);
-            next();
-        } catch (ex) {
-            next(ex);
-        }
+        beforeFn(req, res);
+        next();
     });
 
     // action handler
@@ -51,25 +43,17 @@ module.exports = (router, type, moduleObject, handler) => {
         }
     });
     handlers.push((req, res, next) => {
-        try {
-            const parameters = mappers.map(m => m(req));
-            const result = fn.apply(fn, parameters);
-            responseHelper(res, result);
-            next();
-        } catch (ex) {
-            next(ex);
-        }
+        const parameters = mappers.map(m => m(req));
+        const result = fn.apply(fn, parameters);
+        responseHelper(res, result);
+        next();
     });
 
     // after handler
     const afterFn = moduleObject[`after${FnName}`];
     if (afterFn) handlers.push((req, res, next) => {
-        try {
-            afterFn(req, res);
-            next();
-        } catch (ex) {
-            next(ex);
-        }
+        afterFn(req, res);
+        next();
     });
 
     // routing configuration
