@@ -17,27 +17,72 @@ All copyrights for the above packages belong to their respective owners.
 ## Modules
 You can easily add endpoints to this app by adding `module.js` files to `module` folder. For more information see `/modules/Test/module.js` file.
 
-General guidelines for creating endpoint:
-- folder structure inside `modules` folder will be used as an endpoint route, e.g.:
-  - `modules/user/module.js` -> `http://example.com/user`
-  - `modules/article/details/module.js` -> `http://example.com/article/details`
-- use 4 rest methods: GET, POST, PUT and DELETE
-- each method should define it's parameters as follows:
+#### Routing
+ANE uses two factors to build routings:
+ - folder structure inside `modules` folder to build routing, e.g.:
+   - `modules/user/module.js` -> `http://example.com/user`
+   - `modules/article/details/module.js` -> `http://example.com/article/details`
+ - handlers path parameters e.g.: (for mode details see [Parameter binding and resolving](#parameter-binding-and-resolving))
+``` javascript
+{
+    get: [
+        () => {}, // this will be root GET handler '/'
+        (_id) => {} // this will b sub-route GET handler '/:id'
+    ]
+}
+```
+
+#### REST style endpoint
+Use 4 rest methods `GET`, `POST`, `PUT` and `DELETE` to indicate supported HTTP methods of the endpoint.
+
+#### Parameter binding and resolving
+Each handler method should define it's parameters as follows (all parameters will be autowired):
   - parameters starting with underscore (`_`) will be retrieved from path
   - parameters starting with dollar sign (`$`) will be retrieved from body
   - parameters without aformentioned prefixes will be retrieved from query string
-  - all parameters will be autowired
-- method should return one of:
+
+#### Returned value
+Method handler should return one of:
   - data object - which will be serialized
   - function that will receive expressjs response object as an argument
   - object with render method that will be invoked the same way as above function
-- each method has it's lifecycle:
+
+#### Lifecycle
+each method has it's lifecycle:
   - canAccess\[method\] - returns boolean value indicating whether user have access to specific endpoint or not, receives expressjs request object 
   - before\[method\] - runs before handler, can modify request specificaly for this handler, receives expressjs request and response objects
   - \[method\] - main handler of the method, will receive declared paramters autowired from request accordingly to the names, you can provide an array of handlers with different path parameters, and they will be autowired to respective paths (build from path parameters). It is important to follow proper order of handlers, as it may lead to unwanted errors when resolving route handler. Also, remember, that it's the number of path parameters that distincts the path, not the names and order.
   - after\[method\] - runs after handler, receives expressjs request and response objects
 
-(not the best) Example:
+```javascript
+{
+    canAccessGet: req => {},
+    beforeGet: (req, res) => {},
+    get: (...args) => {},
+    afterGet: (req, res) => {},
+
+    canAccessPost: req => {},
+    beforePost: (req, res) => {},
+    post: (...args) => {},
+    afterPost: (req, res) => {},
+
+    canAccessPut: req => {},
+    beforePut: (req, res) => {},
+    put: (...args) => {},
+    afterPut: (req, res) => {},
+
+    canAccessGet: req => {},
+    beforeGet: (req, res) => {},
+    get: (...args) => {},
+    afterGet: (req, res) => {},
+}
+```
+
+#### Example module
+Lets say, that we want to create REST endpoint to update tasks with route `PUT /my/tasks/{id}`. Endpoint will receive PUT request with task description to be updated, and afterwards will send message to user that hist task has been updated.
+
+Create file `/modules/my/tasks/module.js` with the following content:
+
 ```javascript
 const getUser = require('./../common/getUser');
 const taskService = require('./../common/taskService');
@@ -67,8 +112,34 @@ module.exports = router => {
 };
 ```
 
+In above example:
+ - `canAccessPut` method checks, if there is a cookie with `userId` parameter, which means, that user has been authenticated. If there is not `userId` in a cookie, pipeline will be broken, and `401 Unauthorized` message will be retured to user. No other methods will be invoked.
+ - `beforePut` method retrieves user object, that will be used later
+ - `put` method performs update
+ - `afterPut` method sends message to the user with information about task
+
 ## Plugins
 Application allows for defining own plugins, they are simple functions that accespt express app object. They are defined within `plugins` directory, as a `plugin.js` file within it's respective folder, e.g. `/plugins/ResponseAutoClose/plugin.js`
+those files should export object with two properties `before` and `after`, that contains handler (or list of handlers), that will be executed accordingly before and after modules are loaded. each handler will recevie following parameters:
+ - express app object
+ - configuration retriever function
+ - path resolving function that will enable path resolving from root of application
+
+#### Example plugin
+Create file `/plugins/RequestMeasurement/plugin.js` with following content:
+```javascript
+module.exports = {
+    before: (app, cfg, pathResovler) => {
+        if (cfg('debug'))
+            app.use((req, res) => console.log(`Request started at ${new Date()}`));
+    },
+    after: (app, cfg, pathResovler) => {
+        if (cfg('debug'))
+            app.use((req, res) => console.log(`Request stopped at ${new Date()}`));
+    }
+};
+```
+In above example each request will display in console date and time of request start and stop, so that you can see how long it took to process this request.
 
 ## Automatic modules and plugins detection
 Both `modules` and `plugins` folders are scanned on application start, and required files are loaded in order to build middlewares for express app.

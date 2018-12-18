@@ -1,27 +1,23 @@
 const path = require('path');
-const fs = require('fs');
 const numCPUs = require('os').cpus().length;
 const cluster = require('cluster');
 const express = require('express');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const helmet = require('helmet');
-
-const errorHandling = require('./middlewares/errorHandling');
-const unresolvedHandler = require('./middlewares/unresolvedHandler');
 
 const configHelper = require('./helpers/configHelper');
 const routerHelper = require('./helpers/routerHelper');
 const fileListHelper = require('./helpers/fileListHelper');
 
-function resolvePath(value) {
-    return path.isAbsolute(value) ? value : path.join(__dirname, '..', value);
+function resolvePath(value, ...args) {
+    const chunks = [__dirname, '..', value].concat(args);
+    return path.isAbsolute(value) ? value : path.join.apply(path.join, chunks);
 }
 
 class AppEngine
 {
     constructor() {
         this._app = null;
+        this._beforePlugins = [];
+        this._afterPlugins = [];
     }
 
     _moduleLoader(route, module) {
@@ -29,7 +25,7 @@ class AppEngine
         ['get', 'post', 'put', 'delete'].forEach(k => {
             const handler = module[k];
             if (handler) {
-                if (typeof(handler) === 'object') // an array of handlers each for different route because of path parameters
+                if (Array.isArray(handler)) // an array of handlers each for different route because of path parameters
                     handler.forEach(h => routerHelper(router, k, module, h));
                 else
                     routerHelper(router, k, module);
@@ -53,22 +49,33 @@ class AppEngine
         });
     }
 
+    _importPlugin(plugin, list) {
+        if (plugin) {
+            if (!Array.isArray(plugin))
+                plugin = [plugin];
+            list.push.apply(list, plugin);
+        }
+    }
+
     _loadPlugins(dir) {
-        fileListHelper(dir, filePath => filePath.endsWith('plugin.js'), filePath => require(filePath)(this._app)); 
+        fileListHelper(dir, filePath => filePath.endsWith('plugin.js'), filePath => {
+            const plugin = require(filePath);
+            this._importPlugin(plugin.before, this._beforePlugins);
+            this._importPlugin(plugin.after, this._afterPlugins);
+        }); 
     }
 
     run(config) {
         if (!config) throw 'Configuration not found!';
         
-        const infrastructureConfig = configHelper(config, 'infrastructure');
-
         // spawn nodes
+        const infrastructureConfig = configHelper(config, 'infrastructure');
         let nodesToSpawn = infrastructureConfig.nodes < 0 ? numCPUs : (infrastructureConfig.nodes || 0);
         if (nodesToSpawn && cluster.isMaster) 
         {
             // list of ignored exit codes which will cause the worker not to respawn
             let ignoredCodes = infrastructureConfig.ignoreRespawnOnErrorCode === undefined ? [] : infrastructureConfig.ignoreRespawnOnErrorCode;
-            if (typeof(ignoredCodes) !== 'object')
+            if (!Array.isArray(ignoredCodes))
                 ignoredCodes = [ignoredCodes];
             const autoRespawn = infrastructureConfig.autoRespawn || false;
 
@@ -85,39 +92,22 @@ class AppEngine
             // create app
             this._app = express();
 
-            // https://expressjs.com/en/advanced/best-practice-security.html
-            this._app.disable('x-powered-by');
-            this._app.use(helmet());
+            // load plugins
+            const pluginsPath = resolvePath(infrastructureConfig.pluginsDir || 'plugins');
+            this._loadPlugins(pluginsPath);
 
-            // read config
-            const appConfig  = configHelper(config, 'app.host');
-            const appAccept  = configHelper(config, 'app.accept');
-            const appCookies = configHelper(config, 'app.cookies');
-            
-            // configure middleware
-            Object.keys(appAccept).forEach(a => {
-                const parser = bodyParser[a];
-                const args = appAccept[a];
-                this._app.use(parser(args));
-            });
-            this._app.use(cookieParser(appCookies.secret, appCookies.options));
+            // adding 'before' plugins
+            this._beforePlugins.forEach(p => p(this._app, config, resolvePath));
 
             // load modules
             const modulesPath = resolvePath(infrastructureConfig.modulesDir || 'modules');
             this._loadModules(modulesPath);
 
-            // load plugins
-            const pluginsPath = resolvePath(infrastructureConfig.pluginsDir || 'plugins');
-            this._loadPlugins(pluginsPath);
-
-            // error handling
-            const logsPath = resolvePath(infrastructureConfig.logsDir || 'logs');
-            this._app.use(errorHandling(logsPath));
-        
-            // when no handler has been executed, response will not be finished, so at this point, we can safely assume, that no route has been resolved
-            this._app.use(unresolvedHandler);
+            // adding 'before' plugins
+            this._afterPlugins.forEach(p => p(this._app, config, resolvePath));
 
             // launch the app
+            const appConfig  = configHelper(config, 'app.host');
             this._app.listen(appConfig.port || 80, appConfig.host, (err) => {
                 if (err) throw err;
             });
